@@ -902,6 +902,47 @@ fn a_model_is_chosen_with_the_model_command() {
 }
 
 #[test]
+fn the_default_command_lists_only_the_models_of_seek_models() {
+    let mut app = app();
+    let model = a_local_model();
+    app.default_model = Some(model.id.clone());
+    app.local_models = vec![model];
+    for c in "/default".chars() {
+        app.update(Message::Key(key(KeyCode::Char(c))));
+    }
+    app.update(Message::Key(key(KeyCode::Enter)));
+
+    let screen = render(&mut app, 100, 30);
+    assert!(screen.contains("┌ Default model "), "{screen}");
+    assert!(
+        screen.contains("DEFAULT"),
+        "the chosen default is marked: {screen}"
+    );
+    // This selector is for the local models only; the cloud catalog stays out of it.
+    assert!(!screen.contains("Claude Sonnet 4.5"), "{screen}");
+}
+
+#[test]
+fn choosing_a_default_model_persists_it_and_switches_to_it() {
+    let mut app = app();
+    let model = a_local_model();
+    let id = model.id.clone();
+    app.local_models = vec![model];
+    for c in "/default".chars() {
+        app.update(Message::Key(key(KeyCode::Char(c))));
+    }
+    app.update(Message::Key(key(KeyCode::Enter)));
+    let command = app.update(Message::Key(key(KeyCode::Enter)));
+
+    assert_eq!(command, Some(Command::SetDefaultModel(id.clone())));
+    assert_eq!(app.default_model.as_deref(), Some(id.as_str()));
+    assert!(app.model_configured, "the model is usable at once");
+    let lines = render_lines(&mut app, 100, 30);
+    let footer = lines.last().expect("there is a footer");
+    assert!(footer.contains("m"), "the footer shows the model: {footer}");
+}
+
+#[test]
 fn the_launch_options_are_saved_to_the_sidecar() {
     let mut app = app();
     let model = a_local_model();

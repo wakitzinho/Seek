@@ -226,6 +226,8 @@ pub enum Command {
     SetMode(PermissionMode),
     /// Change the permission level SEEK starts with, and remember it.
     SetDefaultMode(PermissionMode),
+    /// Set the model SEEK starts with, and remember it in `config.toml`.
+    SetDefaultModel(String),
     /// Change the name of the user.
     SetUserName(String),
     /// Move the sidebar to the other side. The scrollbar follows it (SPEC 10.3).
@@ -386,6 +388,8 @@ pub struct App {
     pub catalog: Vec<ModelInfo>,
     /// The model that is currently selected.
     pub current: Option<ModelInfo>,
+    /// The model SEEK starts with, chosen with `/default` (D-050).
+    pub default_model: Option<String>,
     /// The reasoning level of the current model.
     pub reasoning: Option<String>,
     /// The last level that was not off, so that `/think` can toggle back to it (SPEC 9.7).
@@ -488,6 +492,7 @@ impl App {
             providers: ProvidersConfig::default(),
             catalog: bundled_models(),
             current: None,
+            default_model: None,
             reasoning: None,
             last_reasoning: None,
             prompt_mode: PromptMode::Normal,
@@ -1385,6 +1390,15 @@ impl App {
                         false,
                     );
                 }
+                if menu.kind == MenuKind::Default {
+                    let value = menu.items[index].value.clone();
+                    if let Some(id) = self.apply_picker_value(&value) {
+                        self.default_model = Some(id.clone());
+                        return (Some(Command::SetDefaultModel(id)), false);
+                    }
+                    // A switch that does not fit keeps the selector open.
+                    return (None, true);
+                }
                 let value = menu.items[index].value.clone();
                 match value.as_str() {
                     "settings:name" => {
@@ -1837,6 +1851,30 @@ impl App {
             .collect();
         Menu::new("Models", MenuKind::Model, items)
             .with_hint("↑↓ models · type to search · Enter use · Esc close")
+    }
+
+    /// The selector for `/default`: the local models of `~/seek/models` only (D-050).
+    fn default_model_menu(&self) -> Menu {
+        let items = self
+            .local_models
+            .iter()
+            .map(|local| {
+                let badge = if self.default_model.as_deref() == Some(local.id.as_str()) {
+                    "DEFAULT"
+                } else if self.model.local && self.model.model == local.name {
+                    "CURRENT"
+                } else {
+                    "LOCAL"
+                };
+                MenuItem::new(local.name.clone(), format!("local:{}", local.id))
+                    .with_detail(local.path.display().to_string())
+                    .with_right(&local.id)
+                    .with_group("local")
+                    .with_badge(badge)
+            })
+            .collect();
+        Menu::new("Default model", MenuKind::Default, items)
+            .with_hint("↑↓ models · type to search · Enter set default · Esc close")
     }
 
     /// The grok-style settings menu: each row is a value you can cycle with ←/→.
@@ -2303,6 +2341,10 @@ impl App {
                 self.overlay = Some(Overlay::Menu(self.model_menu()));
                 None
             }
+            "/default" => {
+                self.overlay = Some(Overlay::Menu(self.default_model_menu()));
+                None
+            }
             "/provider" => {
                 self.overlay = Some(Overlay::Picker(self.provider_picker()));
                 None
@@ -2353,6 +2395,7 @@ impl App {
             "/sessions" => Some("/sessions"),
             "/thoughts" => Some("/thoughts"),
             "/model" => Some("/model"),
+            "/default" => Some("/default"),
             "/provider" => Some("/provider"),
             "/compact" => Some("/compact"),
             "/skills" => Some("/skills"),

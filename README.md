@@ -160,6 +160,10 @@ footer and in the prompt border.
 cloud catalog. The chosen model shows in the footer; the `LOCAL` tag is only in the picker (SPEC
 10.2). Cloud keys go in the environment or `state/auth.json`, never in `config.toml`.
 
+**Set a default.** `/default` opens the same panel with only the local models of `~/seek/models/`.
+The choice is saved in `config.toml` as `default_model` and is the model SEEK opens with next time;
+with no default it opens with the model used in the last session (D-050).
+
 **Compose.** The prompt completes while you type, like the oh-my-pi composer:
 
 * `/` completes the slash commands and the installed skills.

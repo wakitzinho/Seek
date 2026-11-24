@@ -940,3 +940,21 @@ event shape instead. New tests cover the shared client (including a source guard
 discovery with a non-UTF-8 body, and listing with counts, model and a broken event line.
 
 **Status:** accepted. The specification, changelog and architecture notes were updated.
+
+## D-050 — A default local model, with the last session as the fallback
+
+**Date:** 2026-11-24 · **Affects:** SPEC 5, 10.3, 10.4; AGENTS.md
+
+The owner asked for `/default`: it opens the same inline panel as `/model` but lists only the local
+models of `~/seek/models`, with a `[DEFAULT]` badge on the chosen one. Enter switches to that model
+now and writes its id (for example `local/mistral`) to `default_model` in `config.toml`. The field
+already existed in the schema-1 config contract, including the project override, so no migration
+is needed.
+
+The model SEEK starts with is chosen in this order: the model of a session resumed with
+`--continue`, then `default_model` from the configuration, then the model of the last session
+(the `last_session.toml` pointer, with a session-list fallback for a trailing model switch with no
+message after it). With none of these, the footer still shows `[no model selected]`.
+
+**Status:** accepted (requested by the owner). The specification, manual checklist, README,
+changelog and architecture notes were updated.

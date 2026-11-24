@@ -35,6 +35,7 @@ Run the TUI in a terminal of **at least 80x24**. Everything below is done in tha
 - [ ] **A message needs a model.** Type "hello" and press Enter — the transcript says to choose a model with `/model`, and the draft stays.
 - [ ] **The model selector.** Type `/model` and press Enter. A bordered panel like the sidebar's opens just above the prompt: `┌ models ─┐`, grouped section headers, compact `❯` rows with the model name, `LOCAL` badges and the model id on the right, and the directional gradient on the picked row. Open the sidebar and the panel stays in the main column beside it; putting the sidebar on the other side flips the gradient. Typing filters the list and the query appears in the title.
 - [ ] **Choose a model.** Press Enter — the picker closes, the footer shows the model.
+- [ ] **The default model.** Type `/default` and press Enter — the same panel lists only the local models of `~/seek/models`, with `[DEFAULT]` on the one last chosen. Pick one: the footer shows it and `default_model` appears in `~/seek/config.toml`. Quit and start SEEK again — it opens with that model. Remove `default_model` from the file, make a session with another model, then restart: SEEK opens with the last session's model (D-050).
 - [ ] **The footer.** One line: the mode chip (`ASK`), the model, the working directory, the branch and the metrics of the session. The metrics are not on a line of their own.
 - [ ] **Shift+Tab switches the mode.** Press it — the chip changes, whatever the sidebar does.
 - [ ] **The mode applies at once.** While the agent works, press Shift+Tab to `YOLO`: the next tool call of that turn runs without asking.
@@ -187,7 +188,7 @@ Every key of the specification, one by one.
 - [ ] **The focus.** With the sidebar open, Tab moves the focus into it; the selected session is highlighted. Tab again moves it back.
 - [ ] **The file.** `~/seek/state/sessions/` holds one JSONL file per session: a header, then a line per message and per model switch.
 - [ ] **The model switch is in the file.** Switch models in the middle of a conversation: the file says which model said what.
-- [ ] **Continue from the shell.** Quit SEEK, run `seek --continue` — the past messages are on screen and the model chip shows the last model used, even from another directory.
+- [ ] **Continue from the shell.** Quit SEEK, run `seek --continue` — the past messages are on screen and the model chip shows the last model used, even from another directory. A `/default` does not override the model of the session being continued.
 - [ ] **History in the app.** `/history` lists past sessions; Enter resumes one and the conversation appears.
 
 ## The context

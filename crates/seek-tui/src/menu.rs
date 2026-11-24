@@ -68,6 +68,8 @@ impl MenuItem {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuKind {
     Model,
+    /// The `/default` selector: the local models of `~/seek/models`.
+    Default,
     Settings,
 }
 
@@ -301,7 +303,7 @@ impl Menu {
 
     /// Draw the settings menu as a sidebar-style panel above the prompt.
     pub fn render(&self, frame: &mut Frame, area: Rect, theme: &Theme, from_left: bool) {
-        if self.kind == MenuKind::Model {
+        if matches!(self.kind, MenuKind::Model | MenuKind::Default) {
             self.render_inline(frame, area, theme, from_left);
             return;
         }

@@ -114,9 +114,11 @@ tests, and a broken picker or a lost keypress only shows up when a person uses i
   lives in `seek-llm`.
 - Ignore key events that are not `KeyEventKind::Press`. Redraw only when the state changed or an
   animation is running.
-- SEEK opens on the chat with `[no model selected]`; no model picker on startup. `/model` opens
-  it, and a message typed before a choice stays in the bar with a note instead of being sent.
-  The first run still asks for the user's name.
+- SEEK opens on the chat, with no model picker. The opening model is, in order, the one of a session
+  resumed with `--continue`, the `default_model` set with `/default` in `config.toml`, then the model
+  of the last session; with none of those the footer shows `[no model selected]` (D-050). `/model`
+  picks a model for the current run, and a message typed before a choice stays in the bar with a note
+  instead of being sent. The first run still asks for the user's name.
 - Toggles live in `state/toggles.toml` and in shared cells in `Runtime`: `save_toggles` updates
   them, so a tool or skill turned off in `/tools` or `/skills` is gone from the agent's next
   request, even mid-turn. The system prompt does not name tools; their schemas do (D-020, D-021).
@@ -364,8 +366,9 @@ Run one package with `cargo test -p seek-core`, one test with `cargo test -p see
 ## Open questions for the owner (spec §16) — don't invent answers
 
 Repo license, browser tool (grok-code vs pi vs fetch-only), opencode free-model endpoint details,
-whether `state/` may live next to the four user folders, the six extra slash commands, default
-provider/model/reasoning level on first run, and a transparent-background logo. Ask; don't assume.
+whether `state/` may live next to the four user folders, the six extra slash commands, the default
+provider/reasoning level on first run (the default local model is D-050), and a
+transparent-background logo. Ask; don't assume.
 
 ## This machine
 

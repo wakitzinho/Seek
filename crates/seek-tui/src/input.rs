@@ -11,6 +11,7 @@ use unicode_width::UnicodeWidthChar;
 /// The slash commands the prompt bar offers.
 pub const SLASH_COMMANDS: &[(&str, &str)] = &[
     ("/compact", "Summarize the older turns"),
+    ("/default", "Set the default local model"),
     ("/help", "Show the key reference"),
     ("/history", "Browse past sessions"),
     ("/mode", "Set the permission mode"),

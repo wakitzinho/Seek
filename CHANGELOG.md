@@ -8,6 +8,10 @@ workspace; each release ships a milestone (SPEC 15).
 
 ## [Unreleased]
 
+### Added
+- `/default` opens a selector of the local models in `~/seek/models` and remembers the choice in
+  `config.toml`. With no default, SEEK opens with the model used in the last session (D-050).
+
 ## [0.7.33] - 2026-11-21
 
 Redundant work removed from startup, search and the session list.

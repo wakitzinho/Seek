@@ -213,6 +213,24 @@ impl Runtime {
             .map(|tag| tag.model)
     }
 
+    /// The model SEEK starts with: the one set with `/default`, else the last session's (D-050).
+    ///
+    /// The default lives in `config.toml` (with a project override), so it wins over the session
+    /// history. The fallback follows the `last_session.toml` pointer, which survives a change of
+    /// directory. `Session::list` is a second chance for a trailing model switch with no message.
+    pub fn startup_model(&self) -> Option<String> {
+        if let Some(id) = &self.config.default_model {
+            return Some(id.clone());
+        }
+        let id = self.latest_session()?;
+        self.session_model(&id).or_else(|| {
+            seek_core::Session::list(&self.sessions_dir())
+                .into_iter()
+                .find(|session| session.id == id && session.model != "-")
+                .map(|session| session.model)
+        })
+    }
+
     /// Open a session and return its messages.
     pub async fn resume_session(&self, id: &str) -> std::io::Result<seek_core::History> {
         let path = self.sessions_dir().join(format!("{id}.jsonl"));
@@ -673,6 +691,15 @@ pub async fn agent_loop(
                 let mut config = seek_core::Config::read(&path).unwrap_or_default();
                 config.default_mode = Some(mode.label().to_lowercase());
                 let _ = config.write(&path);
+            }
+            Command::SetDefaultModel(id) => {
+                // `/default` changes the model SEEK starts with, so persist it in `config.toml`
+                // and use it for this session too (D-050).
+                let path = runtime.home.join(seek_core::config::CONFIG_FILE);
+                let mut config = seek_core::Config::read(&path).unwrap_or_default();
+                config.default_model = Some(id.clone());
+                let _ = config.write(&path);
+                runtime.set_current_model(Some(id));
             }
             Command::RunWidgets => {
                 // The widgets run when the home screen is shown (SPEC 10.5).
@@ -1318,5 +1345,43 @@ mod tests {
         assert_eq!(runtime.session_model(&id).as_deref(), Some("model-a"));
         let history = runtime.resume_session(&id).await.expect("the history");
         assert_eq!(history.messages.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn the_default_model_wins_over_the_last_session() {
+        let home = std::env::temp_dir().join(format!("seek-default-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        std::fs::create_dir_all(&home).expect("the home is created");
+        let root = PathBuf::from("/tmp/seek-default-project");
+        let runtime = Runtime::new(&home, "llama", Some("serve".into())).with_root(root.clone());
+        runtime.new_session().await.expect("a session");
+        runtime.set_current_model(Some("model-a".into()));
+        runtime
+            .append(&seek_core::Message::user("remember this"))
+            .await;
+        // With no `/default`, SEEK starts with the model of the last session.
+        assert_eq!(runtime.startup_model().as_deref(), Some("model-a"));
+
+        let mut config = runtime.config.clone();
+        config.default_model = Some("model-b".into());
+        config
+            .write(&home.join(seek_core::config::CONFIG_FILE))
+            .expect("the config is written");
+        // A fresh run reads the default from config.toml, which takes precedence.
+        let runtime = Runtime::new(&home, "llama", Some("serve".into())).with_root(root);
+        assert_eq!(runtime.startup_model().as_deref(), Some("model-b"));
+    }
+
+    #[tokio::test]
+    async fn a_last_session_switch_without_a_message_is_the_fallback() {
+        let home = std::env::temp_dir().join(format!("seek-switch-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        std::fs::create_dir_all(&home).expect("the home is created");
+        let runtime = Runtime::new(&home, "llama", Some("serve".into()))
+            .with_root(PathBuf::from("/tmp/seek-switch-project"));
+        runtime.new_session().await.expect("a session");
+        runtime.append_switch("local/demo").await;
+
+        assert_eq!(runtime.startup_model().as_deref(), Some("local/demo"));
     }
 }
